@@ -158,8 +158,12 @@ export function setAuthToken(token: string | null): void {
   if (typeof window !== 'undefined') {
     if (token) {
       localStorage.setItem('token', token);
+      // Also set cookie for middleware
+      document.cookie = `accessToken=${token}; path=/; max-age=86400; SameSite=Lax`;
     } else {
       localStorage.removeItem('token');
+      // Remove cookie
+      document.cookie = 'accessToken=; path=/; max-age=0';
     }
   }
 }
