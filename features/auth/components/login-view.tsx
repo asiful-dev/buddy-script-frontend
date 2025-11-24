@@ -1,7 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
   Card,
@@ -24,18 +27,42 @@ import { LoginSchema, LoginSchemaType } from "../validations/auth.schema";
 import { authApi } from "../services/api";
 import { setUser } from "../slices/auth.slice";
 import { useAppDispatch } from "@/shared/libs/redux.config";
+import { setAuthToken } from "@/shared/libs/axios.config";
+import { useToast } from "@/shared/components/ToastProvider";
 import AuthBackground from "./auth-background";
 
 export default function LoginView() {
   const dispatch = useAppDispatch();
+  const router = useRouter();
+  const { success, error } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<LoginSchemaType>({
     resolver: zodResolver(LoginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
   });
 
   const onSubmit = async (values: LoginSchemaType) => {
-    const data = await authApi.login(values);
-    dispatch(setUser(data.user));
+    setIsLoading(true);
+    try {
+      const data = await authApi.login(values);
+      setAuthToken(data.accessToken);
+      dispatch(setUser(data.user));
+      success("Login successful! Redirecting to feed...");
+      
+      // Redirect after a short delay to show the toast
+      setTimeout(() => {
+        window.location.href = "/feed";
+      }, 1500);
+    } catch (err: any) {
+      setIsLoading(false);
+      const errorMessage = err?.response?.data?.message || err?.message || "Login failed. Please try again.";
+      error(errorMessage);
+    }
   };
 
   return (
@@ -125,12 +152,26 @@ export default function LoginView() {
                     <FormItem>
                       <FormLabel className="text-gray-700">Password</FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="Enter your password"
-                          type="password"
-                          className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                          {...field}
-                        />
+                        <div className="relative">
+                          <Input
+                            placeholder="Enter your password"
+                            type={showPassword ? "text" : "password"}
+                            className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 pr-10"
+                            {...field}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                            aria-label={showPassword ? "Hide password" : "Show password"}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -158,8 +199,12 @@ export default function LoginView() {
                   </Link>
                 </div>
 
-                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                  Login now
+                <Button 
+                  type="submit" 
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Logging in..." : "Login now"}
                 </Button>
               </form>
             </Form>
