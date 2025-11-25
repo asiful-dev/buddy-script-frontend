@@ -6,7 +6,6 @@ import { Button } from "@/shared/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/avatar";
 import { Input } from "@/shared/components/ui/input";
 
-// Mock data - replace with API data later
 const suggestedPeople = [
   {
     id: "1",

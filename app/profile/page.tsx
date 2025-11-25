@@ -89,10 +89,8 @@ export default function ProfilePage() {
     mode: "onBlur",
   });
 
-  // Fetch fresh user data if Redux user has empty values
   useEffect(() => {
     const fetchUserData = async () => {
-      // Check if user exists but has empty email (indicating incomplete data)
       if (initialized && user && user._id && (!user.email || !user.email.trim())) {
         try {
           const fetchedUser = await authApi.me();
@@ -100,7 +98,6 @@ export default function ProfilePage() {
             dispatch(setUser(fetchedUser));
           }
         } catch (error) {
-          console.error("Failed to fetch user data:", error);
         }
       }
     };
@@ -110,10 +107,8 @@ export default function ProfilePage() {
     }
   }, [initialized, user, dispatch]);
 
-  // Update form values when user data is loaded or changes
   useEffect(() => {
     if (user && initialized && user._id && user.email && user.email.trim()) {
-      // Only reset form if user has valid email (required field)
       const userData: ProfileFormData = {
         firstName: (user.firstName && typeof user.firstName === 'string' && user.firstName.trim().length > 0) 
           ? user.firstName.trim() 
@@ -143,13 +138,11 @@ export default function ProfilePage() {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file size (5MB max)
       if (file.size > 5 * 1024 * 1024) {
         showError("Image size must be less than 5MB");
         return;
       }
 
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         showError("Please select a valid image file");
         return;

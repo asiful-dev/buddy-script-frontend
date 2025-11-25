@@ -13,7 +13,6 @@ interface Story {
 }
 
 export default function StoriesSection() {
-  // Mock stories data - replace with API data later
   const stories: Story[] = [
     {
       id: "1",
@@ -51,7 +50,6 @@ export default function StoriesSection() {
     <Card className="bg-white dark:bg-[#112032] rounded-none shadow-none">
       <CardContent className="p-4">
         <div className="flex items-center gap-3 overflow-x-auto hide-scrollbar">
-          {/* Your Story Card */}
           <div className="flex-shrink-0 w-24 cursor-pointer group">
             <div className="relative rounded-lg overflow-hidden">
               <div className="relative h-32 rounded-t-lg overflow-hidden border-2 border-blue-500 border-b-0">
@@ -60,16 +58,14 @@ export default function StoriesSection() {
                   alt="Your Story"
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-200"
-                />
-                {/* Blue Plus Button */}
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/5 z-10">
+              />
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/5 z-10">
                   <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center shadow-lg border-4 border-white dark:border-[#112032]">
                     <Plus className="h-5 w-5 text-white" strokeWidth={3} />
-                  </div>
                 </div>
               </div>
-              {/* Your Story Label - Blue Rectangle */}
-              <div className="bg-[#1877F2] rounded-b-lg py-2 px-2 border-2 border-blue-500 border-t-0">
+            </div>
+            <div className="bg-[#1877F2] rounded-b-lg py-2 px-2 border-2 border-blue-500 border-t-0">
                 <p className="text-xs font-semibold text-white text-center">Your Story</p>
               </div>
             </div>

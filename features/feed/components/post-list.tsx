@@ -49,8 +49,6 @@ export default function PostList() {
     try {
       dispatch(setLoading(true));
       const response = await feedApi.getFeed(undefined, 10);
-      console.log("Feed response:", response);
-      // Ensure response has the correct structure
       const feedData: FeedResponse = {
         posts: response.posts || [],
         nextCursor: response.nextCursor,
@@ -58,7 +56,6 @@ export default function PostList() {
       };
       dispatch(setFeed(feedData));
     } catch (err: any) {
-      console.error("Error loading feed:", err);
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to load feed";
       dispatch(setError(errorMessage));
     } finally {
@@ -104,17 +101,14 @@ export default function PostList() {
         <PostItem key={post._id} post={post} />
       ))}
 
-      {/* Loading indicator for pagination */}
       {isLoading && posts?.length > 0 && (
         <div className="flex items-center justify-center py-4">
           <div className="text-sm text-muted-foreground">Loading more posts...</div>
         </div>
       )}
 
-      {/* Observer target for infinite scroll */}
       <div ref={observerTarget} className="h-4" />
 
-      {/* Load more button fallback */}
       {hasMore && !isLoading && (
         <div className="flex justify-center py-4">
           <Button variant="outline" onClick={loadMore}>

@@ -2,10 +2,7 @@
 
 import Image from 'next/image';
 
-/**
- * Auth Background Component
- * Provides decorative background shapes for auth pages
- */
+
 export default function AuthBackground() {
   return (
     <div className="fixed inset-0 overflow-hidden pointer-events-none bg-[#F0F2F5]">

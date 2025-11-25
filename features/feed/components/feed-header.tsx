@@ -27,15 +27,6 @@ export default function FeedHeader() {
   const initialized = useAppSelector((state) => state.auth.initialized);
   const { success } = useToast();
   
-  // Debug: Log user data to help identify the issue
-  useEffect(() => {
-    if (user) {
-      console.log("FeedHeader - User data:", user);
-      console.log("FeedHeader - firstName:", user.firstName);
-      console.log("FeedHeader - lastName:", user.lastName);
-    }
-  }, [user]);
-  
   const userInitials = user
     ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
     : "";
