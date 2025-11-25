@@ -34,13 +34,13 @@ export default function StoriesSection() {
       storyImage: "/assests/story3.png",
     },
     {
-      id: "3",
+      id: "4",
       authorName: "Ryan Roslansky",
       authorAvatar: "/assests/people2.png",
       storyImage: "/assests/story2.png",
     },
     {
-      id: "4",
+      id: "5",
       authorName: "Ryan Roslansky",
       authorAvatar: "/assests/people3.png",
       storyImage: "/assests/story3.png",
