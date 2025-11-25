@@ -1,7 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
   Card,
@@ -27,18 +30,48 @@ import {
 import { authApi } from "../services/api";
 import { setUser } from "../slices/auth.slice";
 import { useAppDispatch } from "@/shared/libs/redux.config";
+import { setAuthToken } from "@/shared/libs/axios.config";
+import { useToast } from "@/shared/components/ToastProvider";
 import AuthBackground from "./auth-background";
 
 export default function RegisterView() {
   const dispatch = useAppDispatch();
+  const router = useRouter();
+  const { success, error } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<RegisterSchemaType>({
     resolver: zodResolver(RegisterSchema),
+    mode: "onBlur", // Show errors when user moves focus from field
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      password: "",
+      terms: false,
+    },
   });
 
   const onSubmit = async (values: RegisterSchemaType) => {
-    const data = await authApi.register(values);
-    dispatch(setUser(data.user));
+    setIsLoading(true);
+    try {
+      // Exclude terms from API payload (only used for validation)
+      const { terms, ...registerPayload } = values;
+      const data = await authApi.register(registerPayload);
+      setAuthToken(data.accessToken);
+      dispatch(setUser(data.user));
+      success("Registration successful! Redirecting to feed...");
+      
+      // Redirect after a short delay to show the toast
+      setTimeout(() => {
+        window.location.href = "/feed";
+      }, 1500);
+    } catch (err: any) {
+      setIsLoading(false);
+      const errorMessage = err?.response?.data?.message || err?.message || "Registration failed. Please try again.";
+      error(errorMessage);
+    }
   };
 
   return (
@@ -166,37 +199,71 @@ export default function RegisterView() {
                     <FormItem>
                       <FormLabel className="text-gray-700">Password</FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="Enter your password"
-                          type="password"
-                          className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                          {...field}
-                        />
+                        <div className="relative">
+                          <Input
+                            placeholder="Enter your password"
+                            type={showPassword ? "text" : "password"}
+                            className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 pr-10"
+                            {...field}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                            aria-label={showPassword ? "Hide password" : "Show password"}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="terms"
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                  />
-                  <label
-                    htmlFor="terms"
-                    className="text-sm text-gray-600 cursor-pointer"
-                  >
-                    I agree to the{" "}
-                    <Link href="#" className="text-blue-600 hover:text-blue-700 underline">
-                      Terms and Conditions
-                    </Link>
-                  </label>
-                </div>
+                <FormField
+                  name="terms"
+                  control={form.control}
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-start gap-2">
+                        <FormControl>
+                          <input
+                            type="checkbox"
+                            id="terms"
+                            checked={field.value}
+                            onChange={(e) => field.onChange(e.target.checked)}
+                            onBlur={field.onBlur}
+                            className="w-4 h-4 mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                          />
+                        </FormControl>
+                        <div className="flex-1">
+                          <label
+                            htmlFor="terms"
+                            className="text-sm text-gray-600 cursor-pointer"
+                          >
+                            I agree to the{" "}
+                            <Link href="#" className="text-blue-600 hover:text-blue-700 underline">
+                              Terms and Conditions
+                            </Link>
+                          </label>
+                          <FormMessage />
+                        </div>
+                      </div>
+                    </FormItem>
+                  )}
+                />
 
-                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                  Register now
+                <Button 
+                  type="submit" 
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Registering..." : "Register now"}
                 </Button>
               </form>
             </Form>
