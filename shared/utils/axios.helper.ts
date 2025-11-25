@@ -3,9 +3,65 @@ import type { AxiosErrorResponse, ApiErrorResponse } from '@/shared/types/axios.
 /**
  * Extracts error message from axios error response
  * @param error - Axios error object
- * @returns Formatted error message string
+ * @returns Human-friendly error message string
  */
 export function getErrorMessage(error: AxiosErrorResponse): string {
+  const status = error.response?.status;
+  
+  // Handle specific status codes with friendly messages
+  if (status === 413) {
+    return 'The file you\'re trying to upload is too large. Please choose a smaller image.';
+  }
+  
+  if (status === 415) {
+    return 'The file type is not supported. Please upload an image file (JPG, PNG, GIF, etc.).';
+  }
+  
+  if (status === 400) {
+    // Check for specific validation errors
+    if (error.response?.data) {
+      const errorData = error.response.data as ApiErrorResponse;
+      
+      // Handle validation errors
+      if (errorData.errors) {
+        const errorMessages = Object.values(errorData.errors).flat();
+        return `Please check your input: ${errorMessages.join(', ')}`;
+      }
+      
+      if (errorData.message) {
+        // Make common backend messages more user-friendly
+        const message = errorData.message.toLowerCase();
+        if (message.includes('image') || message.includes('file')) {
+          return 'There was an issue with the image. Please try a different file or check if it\'s a valid image.';
+        }
+        if (message.includes('size') || message.includes('large')) {
+          return 'The image file is too large. Please choose a smaller file (max 5MB recommended).';
+        }
+        if (message.includes('format') || message.includes('type')) {
+          return 'Invalid image format. Please use JPG, PNG, or GIF.';
+        }
+        return errorData.message;
+      }
+      
+      if (errorData.error) {
+        return errorData.error;
+      }
+    }
+    return 'Invalid request. Please check your input and try again.';
+  }
+  
+  if (status === 500) {
+    if (error.response?.data) {
+      const errorData = error.response.data as ApiErrorResponse;
+      if (errorData.message && errorData.message.toLowerCase().includes('image')) {
+        return 'There was a problem processing your image. Please try again with a different file.';
+      }
+      return 'Oops! Something went wrong on our end. Please try again in a moment.';
+    }
+    return 'Server error occurred. Please try again later.';
+  }
+  
+  // Generic error handling
   if (error.response?.data) {
     const errorData = error.response.data as ApiErrorResponse;
     
@@ -22,17 +78,30 @@ export function getErrorMessage(error: AxiosErrorResponse): string {
     // Handle validation errors
     if (errorData.errors) {
       const errorMessages = Object.values(errorData.errors).flat();
-      return errorMessages.join(', ');
+      return `Validation error: ${errorMessages.join(', ')}`;
     }
   }
   
-  // Fallback to axios error message
+  // Network-related errors
+  if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+    return 'Request timed out. Please check your connection and try again.';
+  }
+  
+  if (!error.response && error.request) {
+    return 'Unable to connect to the server. Please check your internet connection.';
+  }
+  
+  // Fallback to axios error message (make it friendlier)
   if (error.message) {
-    return error.message;
+    // Make technical messages more user-friendly
+    if (error.message.includes('Network Error')) {
+      return 'Network error. Please check your internet connection.';
+    }
+    return `Error: ${error.message}`;
   }
   
   // Default error message
-  return 'An unexpected error occurred';
+  return 'An unexpected error occurred. Please try again.';
 }
 
 /**
@@ -81,4 +150,5 @@ export function isServerError(error: AxiosErrorResponse): boolean {
   const status = getErrorStatus(error);
   return status !== null && status >= 500 && status < 600;
 }
+
 

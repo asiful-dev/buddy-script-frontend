@@ -37,8 +37,13 @@ const requestInterceptor = (config: InternalAxiosRequestConfig): InternalAxiosRe
     config.headers.Authorization = `Bearer ${token}`;
   }
   
-  // Add any custom headers here
-  // config.headers['X-Custom-Header'] = 'value';
+  // IMPORTANT: For FormData (multipart/form-data), remove Content-Type header
+  // Let Axios/browser set it automatically with the correct boundary
+  if (config.data instanceof FormData) {
+    // Don't set Content-Type - browser will set it with boundary
+    delete config.headers['Content-Type'];
+    delete config.headers['content-type'];
+  }
   
   return config;
 };
@@ -100,8 +105,18 @@ const errorInterceptor = (error: unknown) => {
         case 404:
           console.error('Not Found: The requested resource was not found');
           break;
+        case 413:
+          console.error('File too large: The uploaded file exceeds the maximum allowed size');
+          break;
+        case 415:
+          console.error('Unsupported media type: The file format is not supported');
+          break;
         case 500:
           console.error('Server Error: Something went wrong on the server');
+          // For 500 errors with FormData, provide helpful hint
+          if (axiosError.config?.data instanceof FormData) {
+            console.error('💡 Hint: This might be a file upload issue. Check file size, format, or backend configuration.');
+          }
           break;
         default:
           console.error(`Error ${status}: ${errorMessage}`);

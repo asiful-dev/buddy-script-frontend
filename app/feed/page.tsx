@@ -1,9 +1,7 @@
-import React from 'react'
+"use client";
 
-const page = () => {
-  return (
-    <div>Feed</div>
-  )
+import FeedView from "@/features/feed/components/feed-view";
+
+export default function FeedPage() {
+  return <FeedView />;
 }
-
-export default page

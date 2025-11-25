@@ -43,18 +43,22 @@ export default function RegisterView() {
 
   const form = useForm<RegisterSchemaType>({
     resolver: zodResolver(RegisterSchema),
+    mode: "onBlur", // Show errors when user moves focus from field
     defaultValues: {
       firstName: "",
       lastName: "",
       email: "",
       password: "",
+      terms: false,
     },
   });
 
   const onSubmit = async (values: RegisterSchemaType) => {
     setIsLoading(true);
     try {
-      const data = await authApi.register(values);
+      // Exclude terms from API payload (only used for validation)
+      const { terms, ...registerPayload } = values;
+      const data = await authApi.register(registerPayload);
       setAuthToken(data.accessToken);
       dispatch(setUser(data.user));
       success("Registration successful! Redirecting to feed...");
@@ -221,22 +225,38 @@ export default function RegisterView() {
                   )}
                 />
 
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="terms"
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                  />
-                  <label
-                    htmlFor="terms"
-                    className="text-sm text-gray-600 cursor-pointer"
-                  >
-                    I agree to the{" "}
-                    <Link href="#" className="text-blue-600 hover:text-blue-700 underline">
-                      Terms and Conditions
-                    </Link>
-                  </label>
-                </div>
+                <FormField
+                  name="terms"
+                  control={form.control}
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-start gap-2">
+                        <FormControl>
+                          <input
+                            type="checkbox"
+                            id="terms"
+                            checked={field.value}
+                            onChange={(e) => field.onChange(e.target.checked)}
+                            onBlur={field.onBlur}
+                            className="w-4 h-4 mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                          />
+                        </FormControl>
+                        <div className="flex-1">
+                          <label
+                            htmlFor="terms"
+                            className="text-sm text-gray-600 cursor-pointer"
+                          >
+                            I agree to the{" "}
+                            <Link href="#" className="text-blue-600 hover:text-blue-700 underline">
+                              Terms and Conditions
+                            </Link>
+                          </label>
+                          <FormMessage />
+                        </div>
+                      </div>
+                    </FormItem>
+                  )}
+                />
 
                 <Button 
                   type="submit" 

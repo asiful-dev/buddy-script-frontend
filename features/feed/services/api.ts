@@ -6,94 +6,108 @@ import type {
   Comment,
   CreatePostPayload,
   CreateCommentPayload,
+  ReactionPayload,
+  RemoveReactionPayload,
+  ReactionResponse,
   LikePayload,
 } from "../types/feed.definitions";
+import type { ApiResponse } from "@/shared/types/axios.definitions";
 
 export const feedApi = {
-  /**
-   * Get paginated feed of posts
-   * @param cursor - ISO date string for pagination
-   * @param limit - Number of posts to fetch (max 50, default 20)
-   */
-  getFeed: async (cursor?: string, limit: number = 20): Promise<FeedResponse> => {
+  getFeed: async (cursor?: string, limit: number = 10): Promise<FeedResponse> => {
     const params = new URLSearchParams();
     if (cursor) params.append("cursor", cursor);
     if (limit) params.append("limit", limit.toString());
     
-    const response = await axios.get<FeedResponse>(`/posts/feed?${params.toString()}`);
-    return response.data;
+    const response = await axios.get<ApiResponse<FeedResponse>>(`/api/posts/feed?${params.toString()}`);
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return (response.data as ApiResponse<FeedResponse>).data;
+    }
+    return response.data as FeedResponse;
   },
 
-  /**
-   * Create a new post
-   */
   createPost: async (payload: CreatePostPayload): Promise<Post> => {
     const formData = new FormData();
+    
     formData.append("content", payload.content);
     if (payload.visibility) {
       formData.append("visibility", payload.visibility);
     }
+    
     if (payload.image) {
-      formData.append("image", payload.image);
+      formData.append("image", payload.image, payload.image.name);
     }
 
-    const response = await axios.post<Post>("/posts", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
+    const response = await axios.post<ApiResponse<Post>>("/api/posts", formData, {
+      timeout: 90000,
     });
-    return response.data;
+    
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return (response.data as ApiResponse<Post>).data;
+    }
+    return response.data as Post;
   },
 
-  /**
-   * Get a single post by ID
-   */
   getPostById: async (postId: string): Promise<Post> => {
-    const response = await axios.get<Post>(`/posts/${postId}`);
-    return response.data;
+    const response = await axios.get<ApiResponse<Post>>(`/api/posts/${postId}`);
+    
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return (response.data as ApiResponse<Post>).data;
+    }
+    
+    return response.data as Post;
   },
 
-  /**
-   * Update a post
-   */
   updatePost: async (postId: string, payload: Partial<CreatePostPayload>): Promise<Post> => {
     const formData = new FormData();
     if (payload.content) formData.append("content", payload.content);
     if (payload.visibility) formData.append("visibility", payload.visibility);
     if (payload.image) formData.append("image", payload.image);
 
-    const response = await axios.patch<Post>(`/posts/${postId}`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
+    const response = await axios.patch<ApiResponse<Post>>(`/api/posts/${postId}`, formData, {
+      timeout: 90000,
     });
-    return response.data;
+    
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return (response.data as ApiResponse<Post>).data;
+    }
+    return response.data as Post;
   },
 
-  /**
-   * Delete a post
-   */
   deletePost: async (postId: string): Promise<void> => {
-    await axios.delete(`/posts/${postId}`);
+    await axios.delete(`/api/posts/${postId}`);
   },
 
-  /**
-   * Like a post or comment
-   */
+  react: async (payload: ReactionPayload): Promise<void> => {
+    await axios.post("/api/likes", payload);
+  },
+
+  removeReaction: async (payload: RemoveReactionPayload): Promise<void> => {
+    await axios.delete("/api/likes", { data: payload });
+  },
+
+  getReactions: async (targetType: 'post' | 'comment', targetId: string): Promise<ReactionResponse> => {
+    const response = await axios.get<ApiResponse<ReactionResponse>>(`/api/likes/${targetType}/${targetId}`);
+    
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return (response.data as ApiResponse<ReactionResponse>).data;
+    }
+    
+    return response.data as ReactionResponse;
+  },
+
+  // Legacy support - map to new API
   like: async (payload: LikePayload): Promise<void> => {
-    await axios.post("/likes", payload);
+    await axios.post("/api/likes", {
+      ...payload,
+      reactionType: 'like' as const,
+    });
   },
 
-  /**
-   * Unlike a post or comment
-   */
   unlike: async (payload: LikePayload): Promise<void> => {
-    await axios.delete("/likes", { data: payload });
+    await axios.delete("/api/likes", { data: payload });
   },
 
-  /**
-   * Get comments for a post
-   */
   getComments: async (
     postId: string,
     cursor?: string,
@@ -103,33 +117,52 @@ export const feedApi = {
     if (cursor) params.append("cursor", cursor);
     if (limit) params.append("limit", limit.toString());
 
-    const response = await axios.get<CommentsResponse>(
-      `/comments/post/${postId}?${params.toString()}`
+    const response = await axios.get<ApiResponse<CommentsResponse>>(
+      `/api/comments/post/${postId}?${params.toString()}`
     );
-    return response.data;
+    
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return (response.data as ApiResponse<CommentsResponse>).data;
+    }
+    
+    if (response.data && 'comments' in response.data) {
+      return response.data as CommentsResponse;
+    }
+    
+    return { comments: [], hasMore: false };
   },
 
-  /**
-   * Create a comment on a post
-   */
   createComment: async (postId: string, payload: CreateCommentPayload): Promise<Comment> => {
-    const response = await axios.post<Comment>(`/comments/post/${postId}`, payload);
-    return response.data;
+    const response = await axios.post<ApiResponse<Comment>>(`/api/comments/post/${postId}`, payload);
+    
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return (response.data as ApiResponse<Comment>).data;
+    }
+    
+    return response.data as Comment;
   },
 
-  /**
-   * Create a reply to a comment
-   */
   createReply: async (commentId: string, payload: CreateCommentPayload): Promise<Comment> => {
-    const response = await axios.post<Comment>(`/comments/reply/${commentId}`, payload);
-    return response.data;
+    const response = await axios.post<ApiResponse<Comment>>(`/api/comments/reply/${commentId}`, payload);
+    
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return (response.data as ApiResponse<Comment>).data;
+    }
+    
+    return response.data as Comment;
   },
 
-  /**
-   * Get replies for a comment
-   */
   getReplies: async (commentId: string): Promise<Comment[]> => {
-    const response = await axios.get<Comment[]>(`/comments/reply/${commentId}`);
-    return response.data;
+    const response = await axios.get<ApiResponse<Comment[]>>(`/api/comments/reply/${commentId}`);
+    
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return (response.data as ApiResponse<Comment[]>).data;
+    }
+    
+    if (Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    return [];
   },
 };

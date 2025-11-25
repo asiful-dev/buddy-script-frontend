@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 const PUBLIC_ROUTES = ["/auth/login", "/auth/register"];
-const PROTECTED_ROUTES = ["/feed"];
+const PROTECTED_ROUTES = ["/feed", "/profile"];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -38,6 +38,8 @@ export const config = {
   matcher: [
     "/auth/:path*",
     "/feed/:path*",
-    "/feed"
+    "/feed",
+    "/profile/:path*",
+    "/profile"
   ],
 };
